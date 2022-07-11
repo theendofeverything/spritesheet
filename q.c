@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
     SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);       // Draw with alpha
 
     // Turn spritesheet into sprite animation
+    IMG_Init(IMG_INIT_PNG);
     SDL_Texture *img_tex;
     const char *img_path = "art/Kerbey-blinkey-tiredey.png";
     {
@@ -141,6 +142,7 @@ int main(int argc, char *argv[])
     }
 
     // Shutdown
+    IMG_Quit();
     SDL_DestroyTexture(img_tex);
     SDL_DestroyRenderer(ren);
     SDL_DestroyWindow(win);

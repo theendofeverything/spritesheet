@@ -4,10 +4,12 @@
 #include <SDL.h>
 typedef struct
 {
-    const char *text;
+    char *text;
+    SDL_Texture *tex;
     SDL_Rect rect;
     SDL_Color fg;
-} textbox;
+    int margin;
+} TextBox;
 
 #endif // __TEXT_H__
 

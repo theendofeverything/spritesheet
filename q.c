@@ -3,7 +3,8 @@
 #include <stdbool.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
-/* #include "text.h" */
+#include <SDL_image.h>
+#include "text.h"
 #include "window_info.h"
 
 int main(int argc, char *argv[])
@@ -38,6 +39,15 @@ int main(int argc, char *argv[])
     // Game state
     bool quit = false;
     bool show_debug = false;
+    TextBox tb;                                                 // Debug overlay text box
+    char text_buffer[1024];                                     // Max 1024 characters
+    { // Set up the text box
+        tb.fg = (SDL_Color){255,255,255,255};                   // Text color
+        tb.rect=(SDL_Rect){0};                                  // Init size to 0
+        tb.margin = 10;                                         // Margin relative to window
+        tb.rect.x = tb.margin;                                  // Left edge of text
+        tb.text = text_buffer;
+    }
     while(  quit == false  )
     {
         // UI
@@ -67,6 +77,25 @@ int main(int argc, char *argv[])
             SDL_Color bg = {.r=0x1F, .g=0x1F, .b=0x08, .a=0xFF};    // background color
             SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
             SDL_RenderClear(ren);
+        }
+        if(show_debug)
+        { // Debug overlay
+            { // Put text in the text box
+                char *d = tb.text;                              // d : walk dst
+                { const char *str = "Example: ";                // Copy this text
+                    const char *c = str;                        // c : walk src
+                    while(*c!='\0'){*d++=*c++;} *d='\0';        // Copy char by char
+                }
+                SDL_Surface *surf = TTF_RenderText_Blended_Wrapped(font, tb.text, tb.fg,
+                                                wI.w-tb.margin);   // Wrap text here
+                tb.tex = SDL_CreateTextureFromSurface(ren, surf);
+                SDL_FreeSurface(surf);
+                SDL_QueryTexture(tb.tex, NULL, NULL, &tb.rect.w, &tb.rect.h);
+            }
+            { // Draw text
+                SDL_RenderCopy(ren, tb.tex, NULL, &tb.rect);
+                SDL_DestroyTexture(tb.tex);
+            }
         }
         { // Present to screen
             SDL_RenderPresent(ren);

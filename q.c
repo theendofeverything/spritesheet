@@ -42,17 +42,20 @@ int main(int argc, char *argv[])
     SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);       // Draw with alpha
 
     // Turn spritesheet into sprite animation
-    const char *png_path = "art/Kerbey-blinkey-tiredey.png";
-    SDL_Surface *img_surf = IMG_Load(png_path);
-    if(  img_surf == NULL  )
+    SDL_Texture *img_tex;
+    const char *img_path = "art/Kerbey-blinkey-tiredey.png";
     {
-        printf("Failed to load \"%s\": %s", png_path, IMG_GetError());
-        SDL_DestroyWindow(win); SDL_DestroyRenderer(ren);
-        TTF_CloseFont(font); TTF_Quit(); SDL_Quit();
-        return EXIT_FAILURE;
+        SDL_Surface *img_surf = IMG_Load(img_path);
+        if(  img_surf == NULL  )
+        {
+            printf("Failed to load \"%s\": %s", img_path, IMG_GetError());
+            SDL_DestroyWindow(win); SDL_DestroyRenderer(ren);
+            TTF_CloseFont(font); TTF_Quit(); SDL_Quit();
+            return EXIT_FAILURE;
+        }
+        img_tex = SDL_CreateTextureFromSurface(ren, img_surf);
+        SDL_FreeSurface(img_surf);
     }
-    SDL_Texture *img_tex = SDL_CreateTextureFromSurface(ren, img_surf);
-    SDL_FreeSurface(img_surf);
 
     // Game state
     bool quit = false;
@@ -107,7 +110,11 @@ int main(int argc, char *argv[])
         { // Debug overlay
             { // Put text in the text box
                 char *d = tb.text;                              // d : walk dst
-                { const char *str = "Example: ";                // Copy this text
+                { const char *str = "Spritesheet: ";                // Copy this text
+                    const char *c = str;                        // c : walk src
+                    while(*c!='\0'){*d++=*c++;} *d='\0';        // Copy char by char
+                }
+                { const char *str = img_path;                   // Copy this text
                     const char *c = str;                        // c : walk src
                     while(*c!='\0'){*d++=*c++;} *d='\0';        // Copy char by char
                 }

@@ -6,8 +6,10 @@ typedef struct
 {
     char *text;
     SDL_Texture *tex;
-    SDL_Rect rect;
+    SDL_Rect fg_rect;
     SDL_Color fg;
+    SDL_Rect bg_rect;
+    SDL_Color bg;
     int margin;
 } TextBox;
 

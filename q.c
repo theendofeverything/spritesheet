@@ -60,11 +60,15 @@ int main(int argc, char *argv[])
     TextBox tb;                                                 // Debug overlay text box
     char text_buffer[1024];                                     // Max 1024 characters
     { // Set up the text box
-        tb.fg = (SDL_Color){255,255,255,255};                   // Text color
-        tb.rect=(SDL_Rect){0};                                  // Init size to 0
-        tb.margin = 10;                                         // Margin relative to window
-        tb.rect.x = tb.margin;                                  // Left edge of text
-        tb.text = text_buffer;
+        tb.margin = 5;                                          // Margin relative to window
+        tb.fg = (SDL_Color){255,255,255,255};                   // Text color: white
+        tb.fg_rect=(SDL_Rect){0};                               // Init size to 0
+        tb.fg_rect.x = tb.margin;                               // Left edge of text
+        tb.fg_rect.y = tb.margin;                               // Top edge of text
+        tb.bg = (SDL_Color){0,0,0,127};                         // Bgnd: Black 50% opacity
+        tb.bg_rect=(SDL_Rect){0};                               // Init bgnd size
+        tb.bg_rect.w = wI.w;                                    // Bgnd is full window width
+        tb.text = text_buffer;                                  // Point at text buffer
     }
     while(  quit == false  )
     {
@@ -111,10 +115,15 @@ int main(int argc, char *argv[])
                                                 wI.w-tb.margin);   // Wrap text here
                 tb.tex = SDL_CreateTextureFromSurface(ren, surf);
                 SDL_FreeSurface(surf);
-                SDL_QueryTexture(tb.tex, NULL, NULL, &tb.rect.w, &tb.rect.h);
+                SDL_QueryTexture(tb.tex, NULL, NULL, &tb.fg_rect.w, &tb.fg_rect.h);
             }
             { // Draw text
-                SDL_RenderCopy(ren, tb.tex, NULL, &tb.rect);
+                tb.bg_rect.h = tb.fg_rect.h + 2*tb.margin;
+                SDL_SetRenderDrawColor(ren, tb.bg.r, tb.bg.g, tb.bg.b, tb.bg.a);
+                // Render bgnd
+                SDL_RenderFillRect(ren, &tb.bg_rect);
+                // Render text
+                SDL_RenderCopy(ren, tb.tex, NULL, &tb.fg_rect);
                 SDL_DestroyTexture(tb.tex);
             }
         }

@@ -1,3 +1,8 @@
+/* *************TODO***************
+ * Walk spritesheet while it is still a surface.
+ * Split the spritesheet into animation frames.
+ * Write each frame to a texture.
+ * *******************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -35,6 +40,19 @@ int main(int argc, char *argv[])
     SDL_Window *win = SDL_CreateWindow(argv[0], wI.x, wI.y, wI.w, wI.h, wI.flags);
     SDL_Renderer *ren = SDL_CreateRenderer(win, -1, 0);
     SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);       // Draw with alpha
+
+    // Turn spritesheet into sprite animation
+    const char *png_path = "art/Kerbey-blinkey-tiredey.png";
+    SDL_Surface *img_surf = IMG_Load(png_path);
+    if(  img_surf == NULL  )
+    {
+        printf("Failed to load \"%s\": %s", png_path, IMG_GetError());
+        SDL_DestroyWindow(win); SDL_DestroyRenderer(ren);
+        TTF_CloseFont(font); TTF_Quit(); SDL_Quit();
+        return EXIT_FAILURE;
+    }
+    SDL_Texture *img_tex = SDL_CreateTextureFromSurface(ren, img_surf);
+    SDL_FreeSurface(img_surf);
 
     // Game state
     bool quit = false;
@@ -78,6 +96,9 @@ int main(int argc, char *argv[])
             SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
             SDL_RenderClear(ren);
         }
+        { // Draw the spritesheet
+            SDL_RenderCopy(ren, img_tex, NULL, NULL);
+        }
         if(show_debug)
         { // Debug overlay
             { // Put text in the text box
@@ -104,6 +125,9 @@ int main(int argc, char *argv[])
     }
 
     // Shutdown
+    SDL_DestroyTexture(img_tex);
+    SDL_DestroyRenderer(ren);
+    SDL_DestroyWindow(win);
     TTF_CloseFont(font);
     TTF_Quit();
     SDL_Quit();

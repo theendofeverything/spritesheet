@@ -12,6 +12,26 @@
 #include "text.h"
 #include "window_info.h"
 
+void next_frame(SDL_Rect *frame, bool *run, int sprite_size, int nframes)
+{
+    if(  frame->x >= 7*sprite_size  )                           // 8 frames per row
+    { // Go to next row
+        frame->x = 0;
+        frame->y += sprite_size;
+    }
+    else
+    { // Go to next column
+        frame->x += sprite_size;
+    }
+    // Reset after animation is done
+    int max_y = (int)nframes/8;
+    int max_x = (nframes%8)-1;
+    if(  (frame->x >=max_x*sprite_size) && (frame->y >=max_y*sprite_size)  )
+    {
+        /* frame->x = 0; frame->y = 0; // Reset animation */
+        *run = false;
+    }
+}
 int main(int argc, char *argv[])
 {
     for(int i=0; i<argc; i++) puts(argv[i]);
@@ -44,6 +64,15 @@ int main(int argc, char *argv[])
     // Turn spritesheet into sprite animation
     IMG_Init(IMG_INIT_PNG);
     SDL_Texture *img_tex;
+    const int sprite_size=64;
+    int sprite_scale = 4;
+    SDL_Rect sprite = {
+        .x=(wI.w-sprite_scale*sprite_size)/2,
+        .y=(wI.h-sprite_scale*sprite_size)/2,
+        .w=sprite_scale*sprite_size,
+        .h=sprite_scale*sprite_size};           // 64x64 sprite
+    /* SDL_Rect frame = {.x=-1*sprite_size, .y=0, .w=sprite_size, .h=sprite_size};      // -1 because next_frame */
+    SDL_Rect frame = {.x=0*sprite_size, .y=0, .w=sprite_size, .h=sprite_size};      // start at egg
     const char *img_path = "art/Kerbey-blinkey-tiredey.png";
     {
         SDL_Surface *img_surf = IMG_Load(img_path);
@@ -54,6 +83,7 @@ int main(int argc, char *argv[])
             TTF_CloseFont(font); TTF_Quit(); SDL_Quit();
             return EXIT_FAILURE;
         }
+        // Texture to show entire Spritesheet
         img_tex = SDL_CreateTextureFromSurface(ren, img_surf);
         SDL_FreeSurface(img_surf);
     }
@@ -61,6 +91,9 @@ int main(int argc, char *argv[])
     // Game state
     bool quit = false;
     bool show_debug = false;
+    bool run_animation = false;
+    int ticks = 0;                                              // Count SDL ticks
+    const int ticks_per_anim_frame = 7;                         // Animation frame time
     TextBox tb;                                                 // Debug overlay text box
     char text_buffer[1024];                                     // Max 1024 characters
     { // Set up the text box
@@ -88,6 +121,10 @@ int main(int argc, char *argv[])
                         case SDLK_TAB:
                             show_debug = show_debug ? false : true;
                             break;
+                        case SDLK_SPACE:
+                            run_animation = true;
+                            frame.x = -1*sprite_size; frame.y = 0;    // Reset animation
+                            break;
                         default: break;
                     }
                 }
@@ -97,7 +134,36 @@ int main(int argc, char *argv[])
             SDL_PumpEvents();                                   // Update event queue
             const Uint8 *k = SDL_GetKeyboardState(NULL);        // Get all keys
             if(  k[SDL_SCANCODE_Q]  ) quit = true;              // q to quit
+            if(  k[SDL_SCANCODE_UP]  )
+            {
+                sprite_scale++;
+                if(  sprite_scale>32  ) sprite_scale=32;
+                sprite.x=(wI.w-sprite_scale*sprite_size)/2;
+                sprite.y=(wI.h-sprite_scale*sprite_size)/2;
+                sprite.w=sprite_scale*sprite_size;
+                sprite.h=sprite_scale*sprite_size;
+            }
+            if(  k[SDL_SCANCODE_DOWN]  )
+            {
+                sprite_scale--;
+                if(  sprite_scale<1  ) sprite_scale=1;
+                sprite.x=(wI.w-sprite_scale*sprite_size)/2;
+                sprite.y=(wI.h-sprite_scale*sprite_size)/2;
+                sprite.w=sprite_scale*sprite_size;
+                sprite.h=sprite_scale*sprite_size;
+            }
         }
+
+        if(run_animation)
+        {
+            if(  ticks < ticks_per_anim_frame  ) ticks++;
+            else
+            {
+                next_frame(&frame, &run_animation, sprite_size, 30); // 30 frames
+                ticks = 0;
+            }
+        }
+
         // Render
         { // Set dark green background
             SDL_Color bg = {.r=0x1F, .g=0x1F, .b=0x08, .a=0xFF};    // background color
@@ -105,7 +171,11 @@ int main(int argc, char *argv[])
             SDL_RenderClear(ren);
         }
         { // Draw the spritesheet
-            SDL_RenderCopy(ren, img_tex, NULL, NULL);
+            /* SDL_RenderCopy(ren, img_tex, NULL, NULL); */
+
+            /* SDL_Rect frame1 = {.x=1*sprite_size, .y=0*sprite_size, .w=sprite_size, .h=sprite_size}; */
+            SDL_RenderCopy(ren, img_tex, &frame, &sprite);
+            /* SDL_RenderCopy(ren, img_tex, &frame1, &sprite); */
         }
         if(show_debug)
         { // Debug overlay

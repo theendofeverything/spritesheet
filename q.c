@@ -1,7 +1,34 @@
+/* *************Sprite Sheet: Overview***************
+ * - load sprite sheet png as SDL surface img_surf
+ * - load surface into SDL texture img_tex
+ *   (img_tex has all frames)
+ * - Select frame to render WHEN COPYING THE TEXTURE TO THE RENDERER:
+ *
+ *   Example:
+ *   SDL_RenderCopy(ren, img_tex, &frame, &sprite);
+ *
+ *   Rects:
+ *   frame : SDL_Rect identify one frame on the sprite sheet
+ *   sprite : SDL_Rect defining size and location of rendered frame on screen
+ * *******************************/
+/* *************Sprite Sheet: Select Frames***************
+ * - Every frame has size sprite_size x sprite_size
+ * - Example: rect selects the first frame (x=0, y=0)
+ *
+ *      SDL_Rect frame = {.x=0*sprite_size, .y=0, .w=sprite_size, .h=sprite_size};
+ *
+ * - Define the size and location of the sprite frame on the screen.
+ * - Example: rect centers the sprite on the screen and renders it to scale
+ *
+ *      SDL_Rect sprite = { .x=wI.w-sprite_size}/2,
+ *                          .y=wI.h-sprite_size}/2,
+ *                          .w=sprite_size,
+ *                          .h=sprite_size }
+ *
+ * *******************************/
 /* *************TODO***************
- * Walk spritesheet while it is still a surface.
- * Split the spritesheet into animation frames.
- * Write each frame to a texture.
+ * Load all sprite sheets.
+ * Add keyboard control to move sprite.
  * *******************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,9 +40,18 @@
 #include "window_info.h"
 
 void next_frame(SDL_Rect *frame, bool *run, int sprite_size, int nframes)
-{
+{ // Load next frame rect. Set run to false when loading the last frame rect.
+    /* *************DOC***************
+     * Loads rect into frame.
+     * The rect selects the next frame to render from the sprite sheet texture.
+     *
+     * Determine the next frame by looking at the x,y of the current frame.
+     * If this is the last frame, load run with false.
+     * Use nframes to determine if this is the last frame.
+     * *******************************/
+    // Go to the next frame on the sprite sheet texture
     if(  frame->x >= 7*sprite_size  )                           // 8 frames per row
-    { // Go to next row
+    { // If last frame on this row, go to next row
         frame->x = 0;
         frame->y += sprite_size;
     }
@@ -23,7 +59,7 @@ void next_frame(SDL_Rect *frame, bool *run, int sprite_size, int nframes)
     { // Go to next column
         frame->x += sprite_size;
     }
-    // Reset after animation is done
+    // Stop animation at the last frame
     int max_y = (int)nframes/8;
     int max_x = (nframes%8)-1;
     if(  (frame->x >=max_x*sprite_size) && (frame->y >=max_y*sprite_size)  )
@@ -64,15 +100,16 @@ int main(int argc, char *argv[])
     // Turn spritesheet into sprite animation
     IMG_Init(IMG_INIT_PNG);
     SDL_Texture *img_tex;
-    const int sprite_size=64;
-    int sprite_scale = 4;
-    SDL_Rect sprite = {
-        .x=(wI.w-sprite_scale*sprite_size)/2,
-        .y=(wI.h-sprite_scale*sprite_size)/2,
-        .w=sprite_scale*sprite_size,
-        .h=sprite_scale*sprite_size};           // 64x64 sprite
-    /* SDL_Rect frame = {.x=-1*sprite_size, .y=0, .w=sprite_size, .h=sprite_size};      // -1 because next_frame */
-    SDL_Rect frame = {.x=0*sprite_size, .y=0, .w=sprite_size, .h=sprite_size};      // start at egg
+    const int sprite_size=64;                                   // Sprite frames are 64x64
+    int sprite_scale = 4;                                       // Initial scale is 4x actual size
+    SDL_Rect sprite = { .x=(wI.w-sprite_scale*sprite_size)/2,
+                        .y=(wI.h-sprite_scale*sprite_size)/2,
+                        .w=sprite_scale*sprite_size,
+                        .h=sprite_scale*sprite_size             // Scale sprite up by 4x
+                        };
+    SDL_Rect frame = {  .x=0, .y=0,                             // start at first frame
+                        .w=sprite_size, .h=sprite_size          // 64x64 sprite
+                        };
     const char *img_path = "art/Kerbey-blinkey-tiredey.png";
     {
         SDL_Surface *img_surf = IMG_Load(img_path);

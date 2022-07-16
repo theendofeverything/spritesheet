@@ -41,7 +41,7 @@
 #include "text.h"
 #include "window_info.h"
 
-#define print(str) { const char *c = str; while(*c!='\0'){*d++=*c++;} *d='\0'; }
+#define print(str) { const char *c = str; while(*c!='\0'){*d++=*c++;} *d='\0'; } // c walks src, d walks dst
 
 void next_frame(SDL_Rect *frame, bool *run, int sprite_size, int nframes)
 { // Load next frame rect. Set run to false when loading the last frame rect.
@@ -100,12 +100,25 @@ int main(int argc, char *argv[])
     WindowInfo wI; WindowInfo_setup(&wI, argc, argv);           // Size and locate window
     SDL_Window *win = SDL_CreateWindow(argv[0], wI.x, wI.y, wI.w, wI.h, wI.flags);
     SDL_Renderer *ren = SDL_CreateRenderer(win, -1, 0);
-    SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);       // Draw with alpha
+    if(  SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND) <0  )     // Draw with alpha
+    {
+        puts("Cannot draw with alpha channel");
+        SDL_DestroyRenderer(ren);
+        SDL_DestroyWindow(win);
+        TTF_Quit();
+        SDL_Quit();
+        return EXIT_FAILURE;
+    }
 
     // Turn spritesheet into sprite animation
     IMG_Init(IMG_INIT_PNG);
     SDL_Texture *img_tex;                                       // One texture for entire sprite sheet
-    const int sprite_size=64;                                   // Sprite frames are 64x64
+    /* const char *img_path = "art/Kerby blinkey tiredey.png"; const int img_nframes = 30; */
+    /* const int sprite_size=64;                                   // Sprite frames are 64x64 */
+    /* const char *img_path = "art/penguin-huff.png"; const int img_nframes = 12; */
+    /* const int sprite_size=64;                                   // Sprite frames are 64x64 */
+    const char *img_path = "art/Snowsis Running.png"; const int img_nframes = 13;
+    const int sprite_size=32;                                   // Sprite frames are 64x64
     int sprite_scale = 4;                                       // Initial scale is 4x actual size
     SDL_Rect sprite_render = {.x=(wI.w-sprite_scale*sprite_size)/2, // Initial x-pos: center
                               .y=(wI.h-sprite_scale*sprite_size)/2, // Initial y-pos: center
@@ -115,8 +128,18 @@ int main(int argc, char *argv[])
     SDL_Rect sprite_frame = {  .x=0, .y=0,                             // start at first frame
                         .w=sprite_size, .h=sprite_size          // 64x64 sprite
                         };
-    /* const char *img_path = "art/Kerbey-blinkey-tiredey.png"; const int img_nframes = 30; */
-    const char *img_path = "art/penguin-huff.png"; const int img_nframes = 12;
+    if(1) // Create texture directly
+    {
+        img_tex = IMG_LoadTexture(ren, img_path);
+        if(  img_tex == NULL  )
+        {
+            printf("Failed to load \"%s\": %s", img_path, IMG_GetError());
+            SDL_DestroyWindow(win); SDL_DestroyRenderer(ren);
+            TTF_CloseFont(font); TTF_Quit(); SDL_Quit();
+            return EXIT_FAILURE;
+        }
+    }
+    if(0) // Create surface to inspect image, then create texture
     {
         SDL_Surface *img_surf = IMG_Load(img_path);
         if(  img_surf == NULL  )
@@ -126,6 +149,9 @@ int main(int argc, char *argv[])
             TTF_CloseFont(font); TTF_Quit(); SDL_Quit();
             return EXIT_FAILURE;
         }
+        // Tell me about the first pixel in the image:
+        uint32_t *p = img_surf->pixels;
+        printf("0x%08X",*p); // Yes, I get 0xFFFFFFFF, the problem is Pixaki
         img_tex = SDL_CreateTextureFromSurface(ren, img_surf);
         SDL_FreeSurface(img_surf);
     }
@@ -228,23 +254,10 @@ int main(int argc, char *argv[])
         if(show_debug)
         { // Debug overlay
             { // Put text in the text box
-                char *d = tb.text;                              // d : walk dst
-                { const char *str = "Spritesheet: ";                // Copy this text
-                    const char *c = str;                        // c : walk src
-                    while(*c!='\0'){*d++=*c++;} *d='\0';        // Copy char by char
-                }
-                { const char *str = img_path;                   // Copy this text
-                    const char *c = str;                        // c : walk src
-                    while(*c!='\0'){*d++=*c++;} *d='\0';        // Copy char by char
-                }
-                { const char *str = " | ";
-                    const char *c = str;
-                    while(*c!='\0'){*d++=*c++;} *d='\0';
-                }
-                { const char *str = "Animation Frame number";
-                    const char *c = str;
-                    while(*c!='\0'){*d++=*c++;} *d='\0';
-                }
+                char *d = tb.text;                              // d : see macro "print"
+                print("Spritesheet: "); print(img_path);
+                print(" | ");
+                print("Animation Frame number: ");
                 SDL_Surface *surf = TTF_RenderText_Blended_Wrapped(font, tb.text, tb.fg,
                                                 wI.w-tb.margin);   // Wrap text here
                 tb.tex = SDL_CreateTextureFromSurface(ren, surf);

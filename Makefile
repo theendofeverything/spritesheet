@@ -6,7 +6,7 @@ LDLIBS += `pkgconf --libs SDL2_ttf`
 CFLAGS += `pkg-config --cflags SDL2_image`
 LDLIBS += `pkg-config --libs SDL2_image`
 
-SRC = q
+SRC = main
 
 .PHONY: show-tags
 show-tags: tags

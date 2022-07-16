@@ -4,6 +4,26 @@
 - Space - trigger sprite animation to play once
 - Esc - quit
 
+# Sharing artwork
+
+- draw sprites in Pixaki on the iPad
+- "Export" -> "Sprite sheet"
+    - use the default values ("Format" is "PNG")
+
+**Do not** share the sprite sheet over Slack. Slack replaces the
+transparent background with white. It took me a while to figure
+out Slack was the cause of this. I was really annoyed.
+
+This is how I share from iPad to Windows:
+
+- Right-click on the `art` folder, select `Properties`
+- On the `Sharing` tab, click `Share`
+- Click the drop-down arrow to select your Windows account, then
+  click `Share`
+
+The `art` folder is now shared, but it is not public. It still
+requires my Windows username and password to access it.
+
 # Environment
 
 Windows, install MSYS. Install packages for `make`, `gcc`, and `ctags`.

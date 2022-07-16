@@ -28,8 +28,9 @@
  *
  * *******************************/
 /* *************TODO***************
- * Load all sprite sheets.
- * Add keyboard control to move sprite.
+ * 1. Figure out how to export from Pixaki with transparent background.
+ * 2. Load all sprite sheets.
+ * 3. Add keyboard control to move sprite.
  * *******************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -171,7 +172,7 @@ int main(int argc, char *argv[])
         { // Filtered
             SDL_PumpEvents();                                   // Update event queue
             const Uint8 *k = SDL_GetKeyboardState(NULL);        // Get all keys
-            if(  k[SDL_SCANCODE_Q]  ) quit = true;              // q to quit
+            if(  k[SDL_SCANCODE_ESCAPE]  ) quit = true;         // Esc to quit
             if(  k[SDL_SCANCODE_UP]  )
             {
                 sprite_scale++;

@@ -1,3 +1,9 @@
+# Controls
+
+- up/down arrows - zoom
+- Space - trigger sprite animation to play once
+- Esc - quit
+
 # Environment
 
 Windows, install MSYS. Install packages for `make`, `gcc`, and `ctags`.

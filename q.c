@@ -41,6 +41,8 @@
 #include "text.h"
 #include "window_info.h"
 
+#define print(str) { const char *c = str; while(*c!='\0'){*d++=*c++;} *d='\0'; }
+
 void next_frame(SDL_Rect *frame, bool *run, int sprite_size, int nframes)
 { // Load next frame rect. Set run to false when loading the last frame rect.
     /* *************DOC***************
@@ -113,7 +115,8 @@ int main(int argc, char *argv[])
     SDL_Rect sprite_frame = {  .x=0, .y=0,                             // start at first frame
                         .w=sprite_size, .h=sprite_size          // 64x64 sprite
                         };
-    const char *img_path = "art/Kerbey-blinkey-tiredey.png";
+    /* const char *img_path = "art/Kerbey-blinkey-tiredey.png"; const int img_nframes = 30; */
+    const char *img_path = "art/penguin-huff.png"; const int img_nframes = 12;
     {
         SDL_Surface *img_surf = IMG_Load(img_path);
         if(  img_surf == NULL  )
@@ -161,9 +164,15 @@ int main(int argc, char *argv[])
                             show_debug = show_debug ? false : true;
                             break;
                         case SDLK_SPACE:
-                            run_animation = true;
+                            /* run_animation = true; */
                             sprite_frame.x = -1*sprite_size; sprite_frame.y = 0;    // Reset animation
                             break;
+                        case SDLK_LEFT:
+                            break;
+                        case SDLK_RIGHT:
+                            next_frame(&sprite_frame, &run_animation, sprite_size, img_nframes);
+                            break;
+
                         default: break;
                     }
                 }
@@ -198,7 +207,7 @@ int main(int argc, char *argv[])
             if(  ticks < ticks_per_anim_frame  ) ticks++;
             else
             {
-                next_frame(&sprite_frame, &run_animation, sprite_size, 30); // 30 frames
+                next_frame(&sprite_frame, &run_animation, sprite_size, img_nframes); // 30 frames
                 ticks = 0;
             }
         }
@@ -227,6 +236,14 @@ int main(int argc, char *argv[])
                 { const char *str = img_path;                   // Copy this text
                     const char *c = str;                        // c : walk src
                     while(*c!='\0'){*d++=*c++;} *d='\0';        // Copy char by char
+                }
+                { const char *str = " | ";
+                    const char *c = str;
+                    while(*c!='\0'){*d++=*c++;} *d='\0';
+                }
+                { const char *str = "Animation Frame number";
+                    const char *c = str;
+                    while(*c!='\0'){*d++=*c++;} *d='\0';
                 }
                 SDL_Surface *surf = TTF_RenderText_Blended_Wrapped(font, tb.text, tb.fg,
                                                 wI.w-tb.margin);   // Wrap text here

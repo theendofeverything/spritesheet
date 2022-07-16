@@ -18,6 +18,73 @@ $ ./q.exe
 
 Install MSYS packages for `SDL2`, `SDL2_image`, and `SDL2_ttf`.
 
+```
+pacman -S mingw-w64-x86_64-SDL2
+pacman -S mingw-w64-x86_64-SDL2_image
+pacman -S mingw-w64-x86_64-SDL2_ttf
+```
+
+*MSYS SDL2 packages are named:*
+
+`mingw-`stuff-in-the-middle`-SDL2_`something
+
+*The stuff in the middle depends on which binary package you choose.*
+
+
+Check if all dependencies are present:
+
+```
+$ pacman -Qe | grep -i "SDL"
+mingw-w64-x86_64-SDL2 2.0.22-2
+mingw-w64-x86_64-SDL2_image 2.0.5-2
+mingw-w64-x86_64-SDL2_ttf 2.0.18-2
+```
+
+## Dependency Descriptions
+
+### SDL2
+
+> A library for portable low-level access to a video framebuffer,
+> audio output, mouse, and keyboard
+>
+> Above description is from: https://packages.msys2.org/base/mingw-w64-SDL2
+
+Documentation: https://wiki.libsdl.org/ -- see API reference **by Category**.
+
+### `SDL_image 2.0`
+
+Package `SDL2_image` adds support for more image formats. I use `.png`
+for the sprite sheet.
+
+Documentation: https://wiki.libsdl.org/SDL_image/FrontPage
+
+### `SDL_ttf`
+
+> This library is a wrapper around the FreeType and Harfbuzz
+> libraries, allowing you to use TrueType fonts to render text in
+> SDL applications.
+> 
+> See the header file SDL_ttf.h and the example showfont.c for
+> documentation on this library. This documentation is also
+> available online at https://wiki.libsdl.org/SDL_ttf
+>
+> Above description is from:
+> https://github.com/libsdl-org/SDL_ttf
+
+Package `SDL2_ttf` adds an API to open `.ttf` font files and to
+render a nul-terminated C-string (a `const char *`) as a Surface.
+
+The API includes many calls for how to generate the Surface
+artwork. I use the `Blended_Wrapped` version to render with alpha
+transparency and to set a pixel width for wrapping text.
+
+This API makes it very easy to layout text, but the texture is
+destroyed and re-created on every frame. I don't know what kind
+of performance penalty this incurs. For a simple debug-overlay
+(not much text), it seems fine.
+
+Documentation: https://www.libsdl.org/projects/old/SDL_ttf/docs/index.html
+
 # Develop
 
 ## Main .c file

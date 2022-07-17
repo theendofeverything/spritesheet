@@ -42,8 +42,33 @@
 #include "window_info.h"
 
 #define print(str) { const char *c = str; while(*c!='\0'){*d++=*c++;} *d='\0'; } // c walks src, d walks dst
+#define printint(ndig,val) { char str[ndig+1]; sprintf(str, "%d", val); print(str); }
 
-void next_frame(SDL_Rect *frame, bool *run, int sprite_size, int nframes)
+void load_frame(SDL_Rect *frame, const int size, const int framenum)
+{ // Load frame rect with rectangle that bounds the current animation frame
+    int col = (framenum-1) % 8;                             // col 0 is frame 1, col 7 is frame 8
+    int row = (int)((framenum-1)/8);                        // row 0 has frames 1 to 8
+    frame->x = col*size; frame->y = row*size;
+}
+void prev_frame(int *framenum, const int framecnt)
+{ // Load previous frame number
+    /* *************DOC***************
+     * framenum : current frame number
+     * framecnt : total number of frames in this spritesheet
+     * *******************************/
+    *framenum -= 1;
+    if(  *framenum < 1  ) *framenum = framecnt;             // Frame 1 - 1 = Frame framecnt
+}
+void next_frame(int *framenum, const int framecnt)
+{ // Load next frame number
+    /* *************DOC***************
+     * framenum : current frame number
+     * framecnt : total number of frames in this spritesheet
+     * *******************************/
+    *framenum += 1;
+    if(  *framenum > framecnt  ) *framenum = 1;             // Frame framecnt + 1 = Frame 1
+}
+void OLD_next_frame(SDL_Rect *frame, bool *run, int sprite_size, int nframes)
 { // Load next frame rect. Set run to false when loading the last frame rect.
     /* *************DOC***************
      * Loads rect into frame.
@@ -110,16 +135,45 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    SDL_Texture *bgnd_tex;
+    { // Paint a beautiful background gradient
+        //                                    flags, w,  h, bit-depth, masks
+        SDL_Surface *surf = SDL_CreateRGBSurface(0, wI.w, wI.h, 32, 0xFF0000, 0xFF00, 0xFF, 0xFF000000);
+        // Fill this surface with a beautiful complex gradient
+        uint32_t vstart = 2*wI.h; uint32_t hstart = 3*wI.w;    // initial gradient brightness
+        uint32_t *p = surf->pixels;
+        for( int row=0; row < surf->h; row++ )                    // Walk rows
+        {
+            for( int col=0; col < surf->w; col++ )                // Walk columns
+            {
+                uint32_t r, g, b, c32;
+                { // Calculate the color
+                    r = ((row+vstart)*255/(wI.h+vstart));
+                    g = ((col+hstart)*200/(wI.w+hstart));
+                    b = ((col+hstart)*255/(wI.w+hstart));
+                    c32 = (0xFF << 24) | (r << 16) | (g << 8) | b;
+                }
+                *p++ = c32;
+            }
+        }
+        bgnd_tex = SDL_CreateTextureFromSurface(ren, surf);
+        SDL_SetTextureBlendMode(bgnd_tex, SDL_BLENDMODE_BLEND);
+        SDL_FreeSurface(surf);
+    }
+
     // Turn spritesheet into sprite animation
     IMG_Init(IMG_INIT_PNG);
     SDL_Texture *img_tex;                                       // One texture for entire sprite sheet
-    /* const char *img_path = "art/Kerby blinkey tiredey.png"; const int img_nframes = 30; */
+    int img_framenum = 1;
+    /* const char *img_path = "art/Kerby blinkey tiredey.png"; const int img_framecnt = 30; */
     /* const int sprite_size=64;                                   // Sprite frames are 64x64 */
-    /* const char *img_path = "art/penguin-huff.png"; const int img_nframes = 12; */
-    /* const int sprite_size=64;                                   // Sprite frames are 64x64 */
-    const char *img_path = "art/Snowsis Running.png"; const int img_nframes = 13;
-    const int sprite_size=32;                                   // Sprite frames are 64x64
-    int sprite_scale = 4;                                       // Initial scale is 4x actual size
+    const char *img_path = "art/penguin-huff.png"; const int img_framecnt = 12;
+    const int sprite_size=64;                                   // Sprite frames are 64x64
+    /* const char *img_path = "art/Snowsis Running.png"; const int img_framecnt = 13; */
+    /* const int sprite_size=32;                                   // Sprite frames are 32x32 */
+    /* const char *img_path = "art/numbers.png"; const int img_framecnt = 9; */
+    /* const int sprite_size=32;                                   // Sprite frames are 32x32 */
+    int sprite_scale = 1;                                       // Initial scale is 1x actual size
     SDL_Rect sprite_render = {.x=(wI.w-sprite_scale*sprite_size)/2, // Initial x-pos: center
                               .y=(wI.h-sprite_scale*sprite_size)/2, // Initial y-pos: center
                               .w=sprite_scale*sprite_size,      // Scale sprite up by 4x
@@ -128,8 +182,7 @@ int main(int argc, char *argv[])
     SDL_Rect sprite_frame = {  .x=0, .y=0,                             // start at first frame
                         .w=sprite_size, .h=sprite_size          // 64x64 sprite
                         };
-    if(1) // Create texture directly
-    {
+    { // Load Texture directly from spritesheet file
         img_tex = IMG_LoadTexture(ren, img_path);
         if(  img_tex == NULL  )
         {
@@ -139,29 +192,36 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
         }
     }
-    if(0) // Create surface to inspect image, then create texture
-    {
+    { // Load spritesheet into a Surface to check background is transparent
         SDL_Surface *img_surf = IMG_Load(img_path);
         if(  img_surf == NULL  )
-        {
+        { // Unable to load image
             printf("Failed to load \"%s\": %s", img_path, IMG_GetError());
             SDL_DestroyWindow(win); SDL_DestroyRenderer(ren);
             TTF_CloseFont(font); TTF_Quit(); SDL_Quit();
             return EXIT_FAILURE;
         }
-        // Tell me about the first pixel in the image:
         uint32_t *p = img_surf->pixels;
-        printf("0x%08X",*p); // Yes, I get 0xFFFFFFFF, the problem is Pixaki
-        img_tex = SDL_CreateTextureFromSurface(ren, img_surf);
+        if(  *p != 0x00000000  )
+        { // Top-left pixel in image is not 0 -- background is not transparent
+            printf("Sprite sheet \"%s\" does not have a transparent background.", img_path);
+            SDL_FreeSurface(img_surf);
+            SDL_DestroyWindow(win); SDL_DestroyRenderer(ren);
+            TTF_CloseFont(font); TTF_Quit(); SDL_Quit();
+            return EXIT_FAILURE;
+        }
         SDL_FreeSurface(img_surf);
     }
 
     // Game state
     bool quit = false;
     bool show_debug = false;
-    bool run_animation = false;
+    int run_animation = 0;
+    bool idle_animation = false;
+    bool start_penguin_huff = false;
+    int delay_btwn_huffs = 0;
     int ticks = 0;                                              // Count SDL ticks
-    const int ticks_per_anim_frame = 7;                         // Animation frame time
+    int ticks_per_anim_frame = 4;                               // Animation frame time
     TextBox tb;                                                 // Debug overlay text box
     char text_buffer[1024];                                     // Max 1024 characters
     { // Set up the text box
@@ -190,16 +250,41 @@ int main(int argc, char *argv[])
                             show_debug = show_debug ? false : true;
                             break;
                         case SDLK_SPACE:
-                            /* run_animation = true; */
-                            sprite_frame.x = -1*sprite_size; sprite_frame.y = 0;    // Reset animation
-                            break;
-                        case SDLK_LEFT:
+                            run_animation = 2*img_framecnt;     // Run animation twice
+                            ticks_per_anim_frame = 4;           // Reset animation speed
                             break;
                         case SDLK_RIGHT:
-                            next_frame(&sprite_frame, &run_animation, sprite_size, img_nframes);
+                            idle_animation = false;
+                            if(0)
+                            { // DEBUG
+                                next_frame(&img_framenum, img_framecnt);
+                                load_frame(&sprite_frame, sprite_size, img_framenum);
+                            }
+                            break;
+                        case SDLK_LEFT:
+                            idle_animation = false;
+                            if(0)
+                            { // DEBUG
+                                prev_frame(&img_framenum, img_framecnt);
+                                load_frame(&sprite_frame, sprite_size, img_framenum);
+                            }
                             break;
 
                         default: break;
+                    }
+                }
+                if(  e.type == SDL_KEYUP  )
+                {
+                    switch(e.key.keysym.sym)
+                    {
+                        case SDLK_RIGHT:
+                        case SDLK_LEFT:
+                            idle_animation = true;
+                            start_penguin_huff = true;
+                            delay_btwn_huffs = img_framecnt;
+                            ticks_per_anim_frame = 2;           // Initial animation speed
+                            img_framenum = 0;                   // Reset idle animation
+                            break;
                     }
                 }
             }
@@ -208,37 +293,70 @@ int main(int argc, char *argv[])
             SDL_PumpEvents();                                   // Update event queue
             const Uint8 *k = SDL_GetKeyboardState(NULL);        // Get all keys
             if(  k[SDL_SCANCODE_ESCAPE]  ) quit = true;         // Esc to quit
-            if(  k[SDL_SCANCODE_UP]  )
-            {
-                sprite_scale++;
-                if(  sprite_scale>32  ) sprite_scale=32;
-                sprite_render.x=(wI.w-sprite_scale*sprite_size)/2;
-                sprite_render.y=(wI.h-sprite_scale*sprite_size)/2;
-                sprite_render.w=sprite_scale*sprite_size;
-                sprite_render.h=sprite_scale*sprite_size;
-            }
-            if(  k[SDL_SCANCODE_DOWN]  )
-            {
-                sprite_scale--;
-                if(  sprite_scale<1  ) sprite_scale=1;
-                sprite_render.x=(wI.w-sprite_scale*sprite_size)/2;
-                sprite_render.y=(wI.h-sprite_scale*sprite_size)/2;
-                sprite_render.w=sprite_scale*sprite_size;
-                sprite_render.h=sprite_scale*sprite_size;
+            if(0)
+            { // Up/Down to zoom in/out
+                if(  k[SDL_SCANCODE_UP]  )
+                {
+                    sprite_scale++;
+                    if(  sprite_scale>32  ) sprite_scale=32;
+                    sprite_render.x=(wI.w-sprite_scale*sprite_size)/2;
+                    sprite_render.y=(wI.h-sprite_scale*sprite_size)/2;
+                    sprite_render.w=sprite_scale*sprite_size;
+                    sprite_render.h=sprite_scale*sprite_size;
+                }
+                if(  k[SDL_SCANCODE_DOWN]  )
+                {
+                    sprite_scale--;
+                    if(  sprite_scale<1  ) sprite_scale=1;
+                    sprite_render.x=(wI.w-sprite_scale*sprite_size)/2;
+                    sprite_render.y=(wI.h-sprite_scale*sprite_size)/2;
+                    sprite_render.w=sprite_scale*sprite_size;
+                    sprite_render.h=sprite_scale*sprite_size;
+                }
             }
         }
 
-        if(run_animation)
+        if(  idle_animation  )
         {
-            if(  ticks < ticks_per_anim_frame  ) ticks++;
+            if(  start_penguin_huff  )
+            {
+                run_animation = 2*img_framecnt;     // Run animation twice
+                if (ticks_per_anim_frame > 4) ticks_per_anim_frame = 4; // Clamp at 8
+                start_penguin_huff = false;
+            }
+            if(  run_animation > 0  )
+            {
+                if(  ticks < ticks_per_anim_frame  ) ticks++;
+                else
+                {
+                    /* OLD_next_frame(&sprite_frame, &run_animation, sprite_size, img_framecnt); // 30 frames */
+                    next_frame(&img_framenum, img_framecnt);
+                    load_frame(&sprite_frame, sprite_size, img_framenum);
+                    ticks = 0;
+                    run_animation--;                                // Count down num times to run animation
+                    if(  (run_animation%img_framecnt) == 0  )
+                    {
+                        ticks_per_anim_frame++;                     // Slow down animation to give is some variation
+                    }
+                }
+            }
             else
             {
-                next_frame(&sprite_frame, &run_animation, sprite_size, img_nframes); // 30 frames
-                ticks = 0;
+                ticks++;
+                if( ticks > delay_btwn_huffs )
+                {
+                    ticks = 0;
+                    start_penguin_huff = true;
+                    delay_btwn_huffs += img_framecnt;
+                }
             }
         }
 
         // Render
+        { // Paint over old video frame with a beautiful background gradient
+            SDL_RenderCopy(ren, bgnd_tex, NULL, NULL);
+        }
+        if(0)
         { // Set dark green background
             SDL_Color bg = {.r=0x1F, .g=0x1F, .b=0x08, .a=0xFF};    // background color
             SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
@@ -257,7 +375,9 @@ int main(int argc, char *argv[])
                 char *d = tb.text;                              // d : see macro "print"
                 print("Spritesheet: "); print(img_path);
                 print(" | ");
-                print("Animation Frame number: ");
+                print("Animation frame: "); printint(3, img_framenum); print(" / "); printint(3, img_framecnt);
+                print(" | ");
+                print("Window size: "); printint(5, wI.w); print("x"); printint(5, wI.h); print(" (wxh)");
                 SDL_Surface *surf = TTF_RenderText_Blended_Wrapped(font, tb.text, tb.fg,
                                                 wI.w-tb.margin);   // Wrap text here
                 tb.tex = SDL_CreateTextureFromSurface(ren, surf);
@@ -282,6 +402,7 @@ int main(int argc, char *argv[])
 
     // Shutdown
     IMG_Quit();
+    SDL_DestroyTexture(bgnd_tex);
     SDL_DestroyTexture(img_tex);
     SDL_DestroyRenderer(ren);
     SDL_DestroyWindow(win);

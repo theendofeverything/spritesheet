@@ -24,6 +24,26 @@ This is how I share from iPad to Windows:
 The `art` folder is now shared, but it is not public. It still
 requires my Windows username and password to access it.
 
+# Parsing an image
+
+## Image pitch
+
+- **image width** is measured in *pixels*
+- **image pitch** is measured in *bytes*
+- **image pitch** contains padding for address alignment
+
+For memory addressing reasons, each row address must be a
+multiple of four bytes.
+
+Implications:
+
+- *image widths* (in pixels) that are a *multiple of four*
+  **have no padding**, regardless of the pixel format
+- *no padding* means that:
+    - 8-bit images have equal width and pitch
+    - 24-bit images have a pitch exactly 3 times the image width
+
+
 # Environment
 
 Windows, install MSYS. Install packages for `make`, `gcc`, and `ctags`.

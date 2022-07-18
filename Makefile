@@ -10,10 +10,10 @@ SRC = main
 
 .PHONY: show-tags
 show-tags: tags
-	@echo -e \n\# LIBS\n
-	@ctags --c-kinds=+l -L headers.txt 	--sort=no -x
 	@echo -e \n\# $(SRC)\n
 	@ctags --c-kinds=+l					--sort=no -x $(SRC).c
+	@echo -e \n\# LIBS\n
+	@ctags --c-kinds=+l -L headers.txt 	--sort=no -x
 
 .PHONY: tags
 tags: $(SRC).c parse-headers.exe

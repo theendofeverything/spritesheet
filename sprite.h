@@ -4,6 +4,17 @@
 #include <SDL.h>
 #include <SDL_image.h>
 
+typedef struct
+{
+    const char *path;                   // Path to sprite sheet
+    int size;                           // Detect from sprite sheet : Ex: 64x64
+    int framecnt;                       // Detect from sprite sheet : Ex: 8 frames
+    int framenum;                       // Current frame number : 1 to framecnt
+    int scale;                          // Scale sprite by this amount
+    SDL_Rect render;                    // Determines size and location of rendered sprite
+    SDL_Rect frame;                     // Selects frame (from sprite sheet) to render
+} Sprite;
+
 bool sprite_sheet_has_transparency(SDL_Surface *sprite_surf, const char *sprite_path)
 { // Return true if sprite_sheet has transparency, otherwise return false
     uint32_t *p = sprite_surf->pixels;
@@ -74,6 +85,38 @@ int sprite_get_num_frames(SDL_Surface *sprite_surf, int sprite_size)
         if(  rstart >= sprite_surf->h  ) found_empty_frame = true;
     }
     return sprite_framecnt;
+}
+
+int sprite_load_info(Sprite *sprite)
+{ // Auto-detect sprite size and number of frames of animation
+    // Load spritesheet into a Surface to check transparency, size, and number of frames
+    SDL_Surface *sprite_surf = IMG_Load(sprite->path);
+    if(  sprite_surf == NULL  )
+    { // Unable to load image
+        printf("Failed to load \"%s\": %s", sprite->path, IMG_GetError());
+        return -1;
+    }
+    if(  sprite_sheet_has_transparency(sprite_surf, sprite->path) == false )
+    { // Sprite sheet does not have a transparent background
+        SDL_FreeSurface(sprite_surf);
+        return -1;
+    }
+    sprite->size = sprite_get_size(sprite_surf);            // Determine size of sprite
+    sprite->framecnt = 0;                                   // Determine number of frames in animation
+    sprite->framecnt = sprite_get_num_frames(sprite_surf, sprite->size);
+    SDL_FreeSurface(sprite_surf);
+
+    // Load other values
+    sprite->framenum = 1;                                   // Start animation at first frame
+    sprite->scale = 2;                                      // Initial scale is 2x actual size
+    sprite->render = (SDL_Rect){.x=0,.y=0,
+                                .w=sprite->scale*sprite->size, // Scale sprite up by 2x
+                                .h=sprite->scale*sprite->size  // Scale sprite up by 2x
+                                };
+    sprite->frame  = (SDL_Rect){.x=0, .y=0,                 // start at first frame
+                                .w=sprite->size, .h=sprite->size // 64x64 sprite
+                                };
+    return 0;
 }
 
 #endif // __SPRITE_H__

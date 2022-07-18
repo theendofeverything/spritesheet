@@ -29,9 +29,11 @@
  *
  * *******************************/
 /* *************TODO***************
- * 1. Figure out how to export from Pixaki with transparent background.
- * 2. Load all sprite sheets.
- * 3. Add keyboard control to move sprite.
+ * ~1. Figure out how to export from Pixaki with transparent background.~
+ * ~2. Load all sprite sheets.~
+ * ~3. Add keyboard control to move sprite.~
+ * 1. Put the animations together under one Character, then index array to select animation
+ * 2. Debug overlay take input, e.g., set sprite scale by typing in debug overlay
  * *******************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,10 +74,10 @@ typedef struct
 } Character;
 
 void center_char_on_screen(Character *character, int size, WindowInfo wI)
-    { // Center sprite on the screen
-        character->x=(wI.w-size)/2;
-        character->y=(wI.h-size)/2;
-    }
+{ // Center sprite on the screen
+    character->x=(wI.w-size)/2;
+    character->y=(wI.h-size)/2;
+}
 
 int main(int argc, char *argv[])
 {
@@ -165,8 +167,15 @@ int main(int argc, char *argv[])
     bool quit = false;
     bool show_debug = true;
     bool walk_animation = false;
-    int walk_direction = 0;
+    int walk_direction = 1;
     int ticks = 0;                                              // Count SDL ticks
+
+    // Debug input
+    #define DEBUG_INPUT_LEN 20
+    char debug_input_buffer[DEBUG_INPUT_LEN];
+    char *debug_input_buffer_end = debug_input_buffer + DEBUG_INPUT_LEN*sizeof(char);
+    char *debug_input = debug_input_buffer; *debug_input = '\0';
+
     TextBox tb;                                                 // Debug overlay text box
     char text_buffer[1024];                                     // Max 1024 characters
     { // Set up the text box
@@ -260,6 +269,13 @@ int main(int argc, char *argv[])
                             break;
                     }
                 }
+                if(  e.type == SDL_TEXTINPUT  )
+                {
+                    // Copy text
+                    const char *c = e.text.text;
+                    while(  (*c!='\0') && (debug_input < debug_input_buffer_end )  )
+                    { *debug_input++ = *c++; } *debug_input = '\0';
+                }
             }
         }
 
@@ -303,6 +319,7 @@ int main(int argc, char *argv[])
                 print("Animation: "); if(walk_animation){ print("waddle");} else print("huff");
                 print(" | ");
                 print("Window size: "); printint(5, wI.w); print("x"); printint(5, wI.h); print(" (wxh)");
+                print("\nInput: "); print(debug_input_buffer);
                 SDL_Surface *surf = TTF_RenderText_Blended_Wrapped(debug_font, tb.text, tb.fg,
                                                 wI.w-tb.margin);   // Wrap text here
                 tb.tex = SDL_CreateTextureFromSurface(ren, surf);

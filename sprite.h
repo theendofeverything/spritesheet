@@ -13,6 +13,7 @@ typedef struct
     int scale;                          // Scale sprite by this amount
     SDL_Rect render;                    // Determines size and location of rendered sprite
     SDL_Rect frame;                     // Selects frame (from sprite sheet) to render
+    int ticks_per_frame;                // How many game loop ticks before switching to next frame
 } Sprite;
 
 bool sprite_sheet_has_transparency(SDL_Surface *sprite_surf, const char *sprite_path)
@@ -107,6 +108,7 @@ int sprite_load_info(Sprite *sprite)
     SDL_FreeSurface(sprite_surf);
 
     // Load other values
+    sprite->ticks_per_frame = 3;                            // Stay on each frame for 3 game loop ticks 
     sprite->framenum = 1;                                   // Start animation at first frame
     sprite->scale = 2;                                      // Initial scale is 2x actual size
     sprite->render = (SDL_Rect){.x=0,.y=0,

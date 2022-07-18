@@ -128,6 +128,7 @@ int main(int argc, char *argv[])
         shutdown(debug_font, ren, win, NULL, NULL, NULL);
         return EXIT_FAILURE;
     }
+    sprite_PW->ticks_per_frame = 8;
 
     Character char_penguin = {.x=0, .y=0};
     center_char_on_screen(&char_penguin, sprite_PI->scale*sprite_PI->size, wI);
@@ -165,9 +166,7 @@ int main(int argc, char *argv[])
     bool show_debug = true;
     bool walk_animation = false;
     int walk_direction = 0;
-    bool idle_animation = false;
     int ticks = 0;                                              // Count SDL ticks
-    int ticks_per_anim_frame = 3;                               // Animation frame time
     TextBox tb;                                                 // Debug overlay text box
     char text_buffer[1024];                                     // Max 1024 characters
     { // Set up the text box
@@ -228,7 +227,6 @@ int main(int argc, char *argv[])
                             show_debug = show_debug ? false : true;
                             break;
                         case SDLK_RIGHT:
-                            idle_animation = false;
                             walk_animation = true;
                             walk_direction = 1;
                             if(  kmod & (KMOD_LSHIFT|KMOD_RSHIFT)  )
@@ -238,7 +236,6 @@ int main(int argc, char *argv[])
                             }
                             break;
                         case SDLK_LEFT:
-                            idle_animation = false;
                             walk_animation = true;
                             walk_direction = -1;
                             if(  kmod & (KMOD_LSHIFT|KMOD_RSHIFT)  )
@@ -259,7 +256,6 @@ int main(int argc, char *argv[])
                             if(  (kmod & (KMOD_LSHIFT|KMOD_RSHIFT)) == 0 )
                             {
                                 walk_animation = false;
-                                idle_animation = true;
                             }
                             break;
                     }
@@ -267,26 +263,16 @@ int main(int argc, char *argv[])
             }
         }
 
-        if(  walk_animation  )
-        {
-            if(  ticks < ticks_per_anim_frame  ) ticks++;
+        { // Animate
+            Sprite *sprite = walk_animation ? sprite_PW : sprite_PI;
+            if(  ticks < sprite->ticks_per_frame  ) ticks++;
             else
             {
-                anim_next_frame(&sprite_PW->framenum, sprite_PW->framecnt);
-                anim_load_frame(&sprite_PW->frame, sprite_PW->size, sprite_PW->framenum);
-                ticks = 0;
-                char_penguin.x += 6*walk_direction;
-            }
-        }
-        if(  idle_animation  )
-        {
-            if(  ticks < ticks_per_anim_frame  ) ticks++;
-            else
-            {
-                anim_next_frame(&sprite_PI->framenum, sprite_PI->framecnt);
-                anim_load_frame(&sprite_PI->frame, sprite_PI->size, sprite_PI->framenum);
+                anim_next_frame(&sprite->framenum, sprite->framecnt);
+                anim_load_frame(&sprite->frame, sprite->size, sprite->framenum);
                 ticks = 0;
             }
+            if(  walk_animation  ) char_penguin.x += 1*sprite->scale*walk_direction;
         }
 
         // Render
@@ -312,7 +298,7 @@ int main(int argc, char *argv[])
                 print(" | ");
                 print("Animation frame: "); printint(3, sprite->framenum); print(" / "); printint(3, sprite->framecnt);
                 print(" | ");
-                print("Ticks per frame: "); printint(3, ticks_per_anim_frame);
+                print("Ticks per frame: "); printint(3, sprite->ticks_per_frame);
                 print(" | ");
                 print("Animation: "); if(walk_animation){ print("waddle");} else print("huff");
                 print(" | ");

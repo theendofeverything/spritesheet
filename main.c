@@ -1,6 +1,7 @@
 /* *************Sprite Sheet: Overview***************
  * - Load sprite sheet png as SDL texture tex_PI
  *   (tex_PI has all frames)
+ *   (PI stands for Penguin Idle)
  * - Animate by moving the frame rectangle around the spritesheet texture
  * - Copy rectangular section of texture to the renderer
  * - Renderer rectangle sets the size and location on the screen
